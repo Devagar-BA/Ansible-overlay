@@ -15,7 +15,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-inventory
-          path: .
+          path: inventories
   #execute-underlay:
   #  uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
   #  with:
