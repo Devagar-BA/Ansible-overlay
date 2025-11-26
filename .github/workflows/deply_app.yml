@@ -18,10 +18,18 @@ jobs:
           path: |
             inventories
             playbooks/apptest.yml
-  execute-underlay:
-    uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
-    with:
-      playbook: playbooks/apptest.yml
-      inventory: inventory/dev/hosts
-      extra_vars: wl_version=14c
+            
+      - name: Execute Underlay
+        uses: org/infrastructure-underlay/.github/workflows/run-underlay.yml@main
+        with:
+          playbook: overlay/apptest.yml
+          inventory: inventory/dev/hosts
+          extra_vars: wl_version=14c
+
+  #execute-underlay:
+   # uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
+    #with:
+     # playbook: playbooks/apptest.yml
+      #inventory: inventory/dev/hosts
+      #extra_vars: wl_version=14c
 
