@@ -5,7 +5,7 @@ jdbc_configs:
     driver: oracle.jdbc.OracleDriver
     target: webcluster
     user: wl_watchlist_p1
-    password: Qomj#M956qrmCf4
+    password: test
 
 
 
