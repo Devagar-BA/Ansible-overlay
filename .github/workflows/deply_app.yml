@@ -14,7 +14,7 @@ jobs:
       - name: Upload inventory
         uses: actions/upload-artifact@v4
         with:
-          name: app-inventory
+          name: ansible-overlay
           path: inventory/dev/hosts
   
   execute-underlay:
