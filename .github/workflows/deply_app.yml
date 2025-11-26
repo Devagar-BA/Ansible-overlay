@@ -1,0 +1,25 @@
+name: Deploy App A
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout App A
+        uses: actions/checkout@v4
+
+      - name: Upload inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-inventory
+          path: inventory/dev/hosts
+
+      - name: Execute Underlay
+        uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
+        with:
+          playbook: apptest.yml
+          inventory: hosts
+          extra_vars: wl_version=14c
