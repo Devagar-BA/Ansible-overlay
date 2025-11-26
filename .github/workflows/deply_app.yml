@@ -4,32 +4,25 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  package-overlay:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout App A
+      - name: Checkout overlay
         uses: actions/checkout@v4
 
-      - name: Upload inventory
+      - name: Upload overlay artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: app-inventory
+          name: overlay-artifacts
           path: |
-            inventories
+            inventory
             playbooks/apptest.yml
-            
-      - name: Execute Underlay
-        uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
-        with:
-          playbook: overlay/apptest.yml
-          inventory: inventory/dev/hosts
-          extra_vars: wl_version=14c
 
-  #execute-underlay:
-   # uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
-    #with:
-     # playbook: playbooks/apptest.yml
-      #inventory: inventory/dev/hosts
-      #extra_vars: wl_version=14c
+  execute-underlay:
+    needs: package-overlay
+    uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
+    with:
+      playbook: overlay/playbooks/apptest.yml
+      inventory: overlay/inventory/dev/hosts
+      extra_vars: wl_version=14c
 
