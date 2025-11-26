@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration debug="true"
+        xmlns:log4j="http://jakarta.apache.org/log4j/">
+        <!-- This default ConsoleAppender is used to log all NON perf4j messages
+                             to System.out -->
+        <appender name="console" class="org.apache.log4j.ConsoleAppender">
+                <layout class="org.apache.log4j.PatternLayout">
+                        <param name="ConversionPattern" value="%n%d %-5p %c - %m" />
+                </layout>
+        </appender>
+
+        <!--appender for watchlist log file -->
+        <appender name="OpsDashBoard" class="org.apache.log4j.DailyRollingFileAppender">
+                <param name="File" value="logs/watchlist.log" />
+                <param name="Threshold" value="DEBUG" />
+                <param name="Append" value="true" />
+                <param name="DatePattern" value="yyyy-MM-dd" />
+                <layout class="org.apache.log4j.PatternLayout">
+                        <param name="ConversionPattern" value="%d{HH:mm:ss,SSS} [%t] %-5p %c %x - %m%n" />
+                </layout>
+        </appender>
+
+
+        <appender name="LifeCycleEvents" class="org.apache.log4j.DailyRollingFileAppender">
+                <param name="File" value="logs/error.log" />
+                <param name="Threshold" value="DEBUG" />
+                <param name="Append" value="true" />
+                <param name="DatePattern" value="yyyy-MM-dd" />
+                <layout class="org.apache.log4j.PatternLayout">
+                        <param name="ConversionPattern" value="%d{HH:mm:ss}|[%t]|%m%n" />
+                </layout>
+        </appender>
+
+
+
+        <!-- Loggers -->
+        <!-- the main OpsDashBoard log -->
+        <category name="com.ba.watchlist.opsdashboard" additivity="false">
+                <priority value="DEBUG" />
+                <appender-ref ref="OpsDashBoard" />
+        </category>
+
+        <!-- may want different logging level for some dashboard packages -->
+        <category name="com.ba.watchlist.bulkLoad"
+                additivity="false">
+                <priority value="INFO" />
+                <appender-ref ref="OpsDashBoard" />
+        </category>
+
+        <!-- The root logger sends all log statements EXCEPT those sent to the perf4j
+                             logger to System.out. -->
+        <root>
+                <level value="ERROR" />
+                <appender-ref ref="console" />
+        </root>
+</log4j:configuration>

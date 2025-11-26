@@ -1,0 +1,200 @@
+#
+# project="Agile datacentre"
+# ebiz_contact="webservices"
+# app_contact="generic"
+#
+
+ServerRoot /usr/lib64/httpd24
+
+Include /webserver/apache/conf/modules.conf
+
+PidFile /webserver/apache/logs/httpd.pid
+
+Timeout 15
+KeepAlive On
+MaxKeepAliveRequests 100
+KeepAliveTimeout 2
+
+<IfDefine PREFORK>
+# maxclients must be <= serverlimit
+ServerLimit          256
+StartServers           5
+MaxClients           256
+MinSpareServers        5
+MaxSpareServers       10
+MaxRequestsPerChild 5000
+</IfDefine>
+
+<IfDefine WORKER>
+# maxclients must be <= serverlimit x threadsperchild
+ServerLimit           16
+StartServers           2
+MaxClients           400
+MinSpareThreads       25
+MaxSpareThreads       75
+ThreadsPerChild       25
+MaxRequestsPerChild 5000
+</IfDefine>
+
+#
+Listen 0.0.0.0:80
+Listen 0.0.0.0:81
+Listen 0.0.0.0:443
+#
+
+LimitRequestBody 102400
+LimitRequestFields 50
+
+RewriteEngine On
+RewriteCond %{REQUEST_METHOD} !^(${http_methods})$
+RewriteRule .* - [F]
+TraceEnable off
+
+ExtendedStatus On
+
+ Header always append X-Frame-Options SAMEORIGIN
+
+User wgapache
+Group wgapache
+
+ServerAdmin ebiz-ba@ba.com
+ServerName {{lb_name}}
+UseCanonicalName On
+DocumentRoot /webserver/apache/httpdocs
+
+FileETag MTime Size
+# default is 'INode MTime Size' - inode is unsafe.
+
+<Directory />
+   Options None
+   AllowOverride None
+   Order Deny,Allow
+   Deny from All
+</Directory>
+
+<Directory "/webserver/apache/httpdocs">
+   Options None
+   AllowOverride None
+   Order allow,deny
+   Allow from all
+</Directory>
+
+DirectoryIndex index.html
+TypesConfig /etc/mime.types
+UserDir disabled
+
+<IfModule mod_mime_magic.c>
+   MIMEMagicFile /etc/httpd/conf/magic
+</IfModule>
+
+HostnameLookups Off
+
+LogLevel warn
+ErrorLog "|/usr/local/sbin/cronolog -u wgapache -g wgapache /webserver/apache/logs/error_log%Y%m%d"
+LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\" \"%{UNIQUE_ID}e\" %p %D" unique
+CustomLog "|/usr/local/sbin/cronolog -u wgapache -g wgapache /webserver/apache/logs/access_log%Y%m%d" unique env=!dontlog
+
+ServerTokens Prod
+ServerSignature Off
+
+#
+# Copy this to app.conf (without the #) to enable cgi scripts.
+#
+# ScriptAlias /cgi-bin/ "/webserver/apache/cgi-bin/"
+#
+
+<Directory "/webserver/apache/cgi-bin">
+   AllowOverride None
+   Options None
+   Order Deny,Allow
+   Allow from all
+</Directory>
+
+Alias /admin-cgi/ "/webserver/apache/admin-cgi/"
+<Directory "/webserver/apache/admin-cgi">
+   Options FollowSymLinks ExecCGI
+   AddHandler cgi-script .cgi
+   AllowOverride None
+   Order Deny,Allow
+   Allow from all
+</Directory>
+
+<IfModule mod_cgid.c>
+   ScriptSock /webserver/apache/logs/cgisock
+</IfModule>
+
+# will point to either errordocument.conf or dummy.conf
+Include /webserver/apache/conf/${errordocument_conf}
+
+#
+<IfDefine SSL>
+SSLRandomSeed startup file:/dev/urandom 512
+SSLRandomSeed connect file:/dev/urandom 512
+AddType application/x-x509-ca-cert .crt
+AddType application/x-pkcs7-crl    .crl
+SSLSessionCache         dbm:/webserver/apache/logs/ssl_scache
+SSLSessionCacheTimeout  300
+
+SSLProtocol All -TLSv1.1 -TLSv1 -SSLv3 -SSLv2
+SSLCipherSuite ALL:!EXP:!NULL:!ADH:!LOW:!DES:!3DES:!RC4
+SSLHonorCipherOrder On
+
+SetEnvIf User-Agent ".*MSIE.*" \
+         nokeepalive ssl-unclean-shutdown \
+         downgrade-1.0 force-response-1.0
+<VirtualHost _default_:443>
+RewriteEngine On
+RewriteCond %{REQUEST_METHOD} !^(${http_methods})$
+RewriteRule .* - [F]
+# will point to either outage_page.conf or dummy.conf
+Include /webserver/apache/conf/${outage_page_conf}
+SSLEngine on
+SSLCertificateFile /webserver/apache/conf/ssl/webserver.baplc.com.crt
+SSLCertificateKeyFile /webserver/apache/conf/ssl/webserver.baplc.com.key
+# application-specific vhost1 config - will not be overwritten by instance rpm
+Include /webserver/apache/conf/app.vhost1.conf
+</VirtualHost>
+</IfDefine>
+#
+#
+#Include /webserver/apache/conf/${wls_plugin_conf}
+#
+Alias /ebiz-test-pages "/webserver/apache/admin-cgi/ebiz-test-pages/tests.cgi"
+<Directory "/webserver/apache/admin-cgi/ebiz-test-pages">
+   Options ExecCGI
+   AddHandler cgi-script .cgi
+   AllowOverride None
+   Order deny,allow
+   Deny from all
+   Allow from ${test_addresses}
+</Directory>
+
+<Location /apache/status>
+   SetHandler server-status
+   Order deny,allow
+   Deny from all
+   Allow from ${test_addresses}
+</Location>
+
+<Location /apache/info>
+   SetHandler server-info
+   Order deny,allow
+   Deny from all
+   Allow from ${test_addresses}
+   <IfModule mod_security2.c>
+       SecRuleRemoveByID 950922 970003 970004
+   </IfModule>
+</Location>
+
+# for tomcat_proxy (mod_jk or mod_proxy_jk)
+Include /webserver/apache/conf/tomcat_proxy.conf
+
+# will point to either oblix.conf or dummy.conf
+# Oblix related configuration (will be an empty file if oblix not used)
+Include /webserver/apache/conf/${oblix_conf}
+
+# will point to either outage_page.conf or dummy.conf
+Include /webserver/apache/conf/${outage_page_conf}
+
+# application-specific config - will not be overwritten by instance rpm
+Include /webserver/apache/conf/app.conf

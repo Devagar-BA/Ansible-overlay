@@ -1,0 +1,11 @@
+- name: Testing s3 pull
+  hosts: localhost
+  tasks:
+    - name: Download WAR file from S3
+      amazon.aws.aws_s3:
+        bucket: s3b-watchlist-uat-euwe1-app-01
+        object: ant.tar
+        dest: /tmp/ant.tar
+        mode: get
+      delegate_to: localhost  # or the WebLogic host, if it has IAM/access
+

@@ -1,0 +1,51 @@
+connect('{{ weblogic_admin_user }}','{{ weblogic_admin_pass }}','t3://{{ admin_server_listen_address }}:{{ admin_server_listen_port }}')
+
+edit()
+startEdit()
+
+{# === Create normal DataSources === #}
+{% for ds in jdbc_configs %}
+print('Creating datasource {{ ds.name }}...')
+cd('/')
+jdbc = create('{{ ds.name }}', "JDBCSystemResource")
+jdbcResource = jdbc.getJDBCResource()
+jdbcResource.setName('{{ ds.name }}')
+
+driverParams = jdbcResource.getJDBCDriverParams()
+driverParams.setUrl('{{ ds.url }}')
+driverParams.setDriverName("oracle.jdbc.OracleDriver")
+driverParams.setPassword('{{ ds.password }}')
+
+props = driverParams.getProperties()
+userProp = props.createProperty("user")
+userProp.setValue('{{ ds.user }}')
+
+connPoolParams = jdbcResource.getJDBCConnectionPoolParams()
+
+cd('/JDBCSystemResources/{{ ds.name }}')
+set('Targets', jarray.array([ObjectName('com.bea:Name={{ ds.target }},Type=Cluster')], ObjectName))
+{% endfor %}
+
+{# === Create Multi DataSources === #}
+{% for mds in weblogic_multidatasources %}
+print('Creating multi data source {{ mds.name }}...')
+cd('/')
+mdsBean = create('{{ mds.name }}', "JDBCSystemResource")
+mdsResource = mdsBean.getJDBCResource()
+mdsResource.setName('{{ mds.name }}')
+
+# MultiDS JNDI
+mdsParams = mdsResource.getJDBCDataSourceParams()
+mdsParams.setAlgorithmType("{{ mds.algorithm }}")
+mdsParams.setDataSourceList('{{ mds.members | join(",") }}')
+mdsParams.setJNDINames(jarray.array(["{{ mds.jndi }}"], String))
+
+cd('/JDBCSystemResources/{{ mds.name }}')
+set('Targets', jarray.array([ObjectName('com.bea:Name={{ mds.target }},Type=Cluster')], ObjectName))
+{% endfor %}
+
+
+save()
+activate()
+disconnect()
+

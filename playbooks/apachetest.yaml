@@ -1,0 +1,43 @@
+- name: "Setup Apache and start"
+  hosts: apache
+  become: yes
+  vars_files:
+    - ../inventories/{{env}}/group_vars/tomcat_vars.yml
+  tasks:
+
+    - name: Stop the tomcat before cloning
+      command: "service webserver-apache stop"
+    - name: testing
+      debug:
+        msg: "test {{app_side}}"
+    - name: Set Tomcat variables based on side from var file
+      set_fact:
+        apache_name: "{{ apache_config[app_side | default('default')].name }}"
+        apache_port: "{{ apache_config[app_side | default('default')].port }}"
+        apache_path: "{{ apache_config[app_side | default('default')].path }}"
+
+    - name: Print Tomcat info
+      debug:
+        msg: "Name={{ apache_name }}, Port={{ apache_port }}, Path={{ apache_path }}"
+
+    - name: Check if instance path exists
+      stat:
+        path: "{{ apache_path }}"
+      register: apache_path_stat
+    - name: Run clone command with parameters
+      command: "service webserver-apache clone -{{ apache_name }} {{ apache_port }}"
+      become: yes
+      become_user: root
+      register: script_ouput
+      when:
+        - app_side in ['a', 'b']
+        - not apache_path_stat.stat.exists
+    - name: Insert proxy block in Apache config
+      blockinfile:
+        path: "{{apache_path}}/conf/tomcat_proxy.conf"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          ProxyPreserveHost On
+          ProxyPass /components/ http://{{lb_name}}:8080/
+          ProxyPassReverse components/ http://{{lb_name}}:8080/
+        backup: yes

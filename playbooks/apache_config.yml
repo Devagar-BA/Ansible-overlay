@@ -1,0 +1,45 @@
+- name: "Setup Apache and start"
+  hosts: webserver_app:webserver_web
+  become: yes
+  vars_files:
+    - ../inventories/{{env}}/group_vars/weblogic_vars.yml
+  tasks:
+    - name: Set target cluster based on Apache group membership
+      set_fact:
+        target_cluster: >-
+          {{ 'webcluster' if 'webserver_web' in group_names else 
+             'appcluster' if 'webserver_app' in group_names else
+             'unknown'}}
+
+    - name: Testing 
+      debug:
+        msg: "cluster name {{ managed_servers | map(attribute='cluster') | unique | list }}"
+    - name: Filter managed servers for the current cluster
+      set_fact:
+        filtered_servers: "{{ managed_servers | selectattr('cluster', 'equalto', target_cluster) | list }}"
+
+    - name: Show info about filtered servers
+      debug:
+        msg: "Found {{ filtered_servers | length }} managed servers for cluster {{ target_cluster }} on {{ inventory_hostname }}"
+
+    - name: Warn if no managed servers found for the cluster
+      debug:
+        msg: "WARNING: No managed servers found for cluster {{ target_cluster }} on host {{ inventory_hostname }}"
+      when: filtered_servers | length == 0
+    - name: Create weblogic.conf with actual servers or with comment if none
+      template:
+        src: wls_plugin.conf.j2
+        dest: "/webserver/apache/conf/wls_plugin.conf"
+        owner: wgadmin
+        group: wgadmin
+        mode: '0644'
+      vars:
+        cluster_servers: "{{ filtered_servers }}"
+        target_cluster_name: "{{ target_cluster }}"
+
+    - name: Restart the Apache
+      service:
+        name: webserver-apache
+        state: restarted
+        enabled: true
+

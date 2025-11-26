@@ -1,0 +1,29 @@
+tomcat_user: wgadmin
+tomcat_group: wgadmin
+tomcat_config:
+  a:
+    path: "/webserver/tomcat-1a"
+    port: 8000
+    name: "-1a"
+  b:
+    path: "/webserver/tomcat-1b"
+    port: 9000
+    name: "-1b"
+  single:
+    path: "/webserver/tomcat"
+    port: 8085
+    name: ""
+apache_config:
+  a:
+    path: "/webserver/apache-1a"
+    port: 1000
+    name: "-1a"
+  b:
+    path: "/webserver/apache-1b"
+    port: 2000
+    name: "-1b"
+  single:
+    path: "/webserver/apache"
+    port: 8085
+    name: ""
+lb_name: http://nlb.art-uat.int.iag.cloud

@@ -1,0 +1,16 @@
+- name: "Setup Apache and start"
+  hosts: tomcat
+  become: yes
+  vars_files:
+    - ../inventories/{{env}}/group_vars/tomcat_vars.yml
+  tasks:
+    - name: Set Tomcat variables based on side from var file
+      set_fact:
+        tomcat_name: "{{ tomcat_config[app_side | default('default')].name }}"
+        tomcat_port: "{{ tomcat_config[app_side | default('default')].port }}"
+        tomcat_path: "{{ tomcat_config[app_side | default('default')].path }}"
+
+    - name: Print Tomcat info
+      debug:
+        msg: "Name={{ tomcat_name }}, Port={{ tomcat_port }}, Path={{ tomcat_path }}"
+

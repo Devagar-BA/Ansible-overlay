@@ -1,0 +1,82 @@
+- name: "Start WebLogic Admin Server"
+  hosts: admin
+  become: yes
+  vars_files:
+    - ../inventories/{{env}}/group_vars/weblogic_vars.yml
+    - ../inventories/{{env}}/group_vars/jdbc_vars.yml
+    - ../inventories/{{env}}/group_vars/app_vars.yml
+  tasks:
+    - name: debug
+      debug:
+        msg: "{{ weblogic_user }}"
+    - name: Start AdminServer
+      command: "sh startWebLogic.sh"
+      args:
+        chdir: "{{ weblogic_domain_home }}"
+#       async: 600
+#       poll: 0
+#       become: yes
+      become_user: "{{ weblogic_user }}"
+      register: script_out
+
+    - name: debug logs
+      debug:
+        msg: "{{script_out}}"
+
+    - name: Wait until AdminServer is up
+      wait_for:
+        host: "{{ admin_server_listen_address }}"
+        port: "{{ admin_server_listen_port }}"
+        delay: 30
+        timeout: 600
+
+    - name: Configure jdbc template script
+      template:
+        src: jdbc_setup.py.j2
+        dest: "{{weblogic_domain_home}}/jdbc_setup.py"
+        owner: "{{ weblogic_user }}"
+        group: "{{ weblogic_group }}"
+        mode: "0644"
+
+    - name: Configure JDBC via WLST
+      shell: |
+        . "{{ wlst_home }}/server/bin/setWLSEnv.sh"
+        java weblogic.WLST "{{weblogic_domain_home}}/jdbc_setup.py"
+      environment:
+        JAVA_HOME: "{{JAVA_HOME}}"
+        PATH: "{{JAVA_HOME}}/bin:{{ ansible_env.PATH }}"
+    - name: configure app template script
+      template:
+        src: app_deploy.py.j2
+        dest: "{{weblogic_domain_home}}/app_deploy.py"
+        owner: "{{ weblogic_user }}"
+        group: "{{ weblogic_group }}"
+        mode: "0644"
+
+    - name: Create directory if not present
+      file:
+        path: "{{weblogic_domain_home}}/ba-apps"
+        state: directory
+        mode: "0755"
+        owner: "{{ weblogic_user }}"
+        group: "{{ weblogic_group }}"
+
+    - name: Copy warfile to path
+      copy:
+        src: "/tmp/{{item.ear}}"
+        dest: "{{weblogic_domain_home}}/ba-apps/{{item.ear}}"
+        mode: '0755'
+      loop: "{{ deployments }}"
+#    notify: restart weblogic
+
+    - name: Run WLST script for deployments
+      shell: |
+        . "{{ wlst_home }}/server/bin/setWLSEnv.sh"
+        java weblogic.WLST "{{weblogic_domain_home}}/app_deploy.py"
+      environment:
+        JAVA_HOME: "{{JAVA_HOME}}"
+        PATH: "{{JAVA_HOME}}/bin:{{ ansible_env.PATH }}"
+      register: deploy_out
+
+    - debug:
+        var: deploy_out.stdout_lines

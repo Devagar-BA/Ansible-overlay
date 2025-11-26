@@ -1,0 +1,11 @@
+jdbc_configs:
+  - name: uatWatchlistDataSource
+    jndi: com.ba.watchlist.datsource.watchlistpool
+    url: jdbc:oracle:thin:@//w312r.watchlist-uat.int.iag.cloud:1521/W312R
+    driver: oracle.jdbc.OracleDriver
+    target: webcluster
+    user: wl_watchlist_p1
+    password: Qomj#M956qrmCf4
+
+
+

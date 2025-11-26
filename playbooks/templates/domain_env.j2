@@ -1,0 +1,165 @@
+#!/bin/ksh
+########################################################################
+# Script to set environment variables for a WebLogic domain
+# ---------------------------------------------------------
+#
+#
+# Version       Date            Author          Comments
+# -------       ----            ------          --------
+# 1.00          21 Jul 2014     James Greaves   Catlogue concept
+#
+########################################################################
+# PLEASE DO NOT CHANGE THIS FILE, USE app_env INSTEAD, THANK YOU
+########################################################################
+#Set time zone
+export TZ=GMT
+
+# Application Code
+export APPLICATION_CODE=fg
+
+# Application Environment
+export APPLICATION_ENVIRONMENT=prl
+
+# Unix User: Unix account for administering this WebLogic Domain
+export UNIX_USER="wgadmin"
+
+# Domain Name
+export DOMAIN_NAME=wgdomain
+
+#Admin Server Name
+export ADMIN_NAME={{ admin_server_name }}
+export ADMIN_URL=${ADMIN_NAME}:{{ admin_server_listen_port }}
+
+#This Instance Name
+export INSTANCE_NAME=$(hostname)
+{% set port = managed_servers | map(attribute='listen_port') | first %}
+export INSTANCE_URL=${INSTANCE_NAME}:{{ port }}
+
+# WebLogic Version:
+export WEBLOGIC_VERSION=122
+
+# WebLogic Maintenance Pack
+export WEBLOGIC_MAINTENANCE_PACK=14
+
+# WebLogic patch profile
+export PATCH_PROFILE=default
+
+# Domain Home
+export DOMAIN_HOME=/webserver/weblogic
+
+# Log Directory
+export LOG_DIRECTORY=/webserver/weblogic/logs/
+
+#Patched Version
+export PATCH_DIR=220329
+# BEA Home
+export BEA_HOME=/opt/bea/server${WEBLOGIC_VERSION}${WEBLOGIC_MAINTENANCE_PACK}_${PATCH_DIR}
+
+# WebLogic Home
+export WL_HOME=${BEA_HOME}/wlserver
+
+# WebLogic Server Home
+export WLS_HOME=${WL_HOME}/server
+
+# WebLogic patch directory
+export WEBLOGICPATCHDIR=/opt/bea/patch_wls${WEBLOGIC_VERSION}${WEBLOGIC_MAINTENANCE_PACK}
+
+# Java Home and Java
+export JAVA_HOME={{JAVA_HOME}}
+export JAVA=${JAVA_HOME}/bin/java
+
+# JVM_TYPE
+export JVM_TYPE="-server"
+
+# JAVA MEMORY OPTIONS
+# The memory arguments passed to the JVM need to be tuned for the application. Below
+# are recommended values, but please review these for your application. Ensure there is
+# normally enough real (rather than swap) free memory on the m/c to satisfy, and that
+# your allocation of memory has been agreed with Capacity Planning
+
+export MEM_ARGS="-Xms256m -Xmx512m"
+
+# JAVA OPTIONS
+JAVA_OPTIONS="${JVM_TYPE} -D${INSTANCE_NAME} ${MEM_ARGS} -da -Dplatform.home=${WL_HOME} -Dwls.home=${WLS_HOME} -Dwlw.iterativeDev=false -Dwlw.testConsole=false -Dpython.cachedir=${LOG_DIRECTORY}/wlstTemp -Dweblogic.management.discover=false"
+JAVA_OPTIONS="${JAVA_OPTIONS} \
+  -Dcom.sun.management.jmxremote \
+  -Dcom.sun.management.jmxremote.port=7999 \
+  -Dcom.sun.management.jmxremote.ssl=false \
+  -Dcom.sun.management.jmxremote.authenticate=false \
+  -Djava.rmi.server.hostname=10.131.86.187 \
+  -Dcom.sun.management.jmxremote.rmi.port=7999
+  -Djavax.management.builder.initial=weblogic.management.jmx.mbeanserver.WLSMBeanServerBuilder"
+# Note if not admin instance we must include the extra option below
+if [[ ${ADMIN_NAME} != $(hostname) ]]; then
+      JAVA_OPTIONS="${JAVA_OPTIONS} -Dweblogic.management.server=t3://${ADMIN_URL}"
+fi
+export JAVA_OPTIONS
+
+
+# PATH
+PATCH_PATH=${WEBLOGICPATCHDIR}/profiles/${PATCH_PROFILE}/native
+
+PATH=${WLS_HOME}/bin:${JAVA_HOME}/jre/bin:${JAVA_HOME}/bin:${PATH}
+PATH=${PATCH_PATH}:${PATH}
+export PATH
+
+
+# Library Path
+PATCH_LIBPATH=${WEBLOGICPATCHDIR}/profiles/${PATCH_PROFILE}/native
+
+LD_LIBRARY_PATH=${WLS_HOME}/native/linux/x86_64:${WLS_HOME}/native/linux/i686
+LD_LIBRARY_PATH=${PATCH_LIBPATH}:${LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH
+
+
+#CLASSPATHS
+
+# Standard BEA patches (eg security fixes)
+PATCH_CLASSPATH=${WEBLOGICPATCHDIR}/profiles/${PATCH_PROFILE}/sys_manifest_classpath/weblogic_patch.jar
+
+# Application specific additions to CLASSPATH
+OVERRIDE_CLASSPATH=${DOMAIN_HOME}/override
+
+# BA additions to CLASSPATH
+BA_CLASSPATH=${WLS_HOME}/balib
+
+
+CLASSPATH=${JAVA_HOME}/lib/tools.jar:${WLS_HOME}/lib/weblogic_sp.jar:${WLS_HOME}/lib/weblogic.jar:${WLS_HOME}/lib/webservices.jar:${WLS_HOME}/lib/xqrl.jar
+CLASSPATH=${CLASSPATH}:${OVERRIDE_CLASSPATH}
+
+# Following is to enable use of Oracle thin driver release 10.2.0.3,
+# as release bundled with WLS (10.2.0.2) has a bug
+CLASSPATH=${BA_CLASSPATH}/ojdbc14-10.2.0.3.0.jar:${CLASSPATH}
+
+# IMPORTANT: if changing your CLASSPATH, ensure $PATCH_CLASSPATH remains at front
+CLASSPATH=${PATCH_CLASSPATH}:${CLASSPATH}
+export CLASSPATH
+
+
+#######################################################################
+#
+# Monitoring account and password
+# -------------------------------
+#
+# Please do not remove or change the monitoring account and
+# password, as they are required by the ping script. For production
+# instances, Patrol/VIZ will stop working if these details are changed.
+#
+# This monitoring account does not have any priviliges, and can't
+# be used to access the Admin Console, so exposure of it's password
+# in this file is not a security risk.
+#
+# If you do wish to change the monitoring password, please ensure
+# you follow the instructions in 'WebLogic Server Technical Standards
+# on TSOL
+#
+#######################################################################
+
+export PING_SCRIPT_USER=ping_script_user
+export PING_SCRIPT_USER_PASSWORD=p1ngP1ng
+
+#######################################################################
+# Finally include application specifics
+#######################################################################
+
+. $(dirname -- "$0")/app_env

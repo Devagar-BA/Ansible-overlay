@@ -1,0 +1,24 @@
+jdbc_configs:
+  - name: hermes1
+    jndi: hermes
+    url: jdbc:oracle:thin:@dbhost:1521/dbservice
+    driver: oracle.jdbc.OracleDriver
+    target: webcluster
+    user: dbuser
+    password: dbpass
+  - name: hermes2
+    jndi: hermes
+    url: jdbc:oracle:thin:@dbhost:1521/dbservice
+    driver: oracle.jdbc.OracleDriver
+    target: webcluster
+    user: dbuser
+    password: dbpass
+
+weblogic_multidatasources:
+  - name: hermesMultiDS
+    jndi: "hermesMultiDS"
+    algorithm: Failover     # or Load-Balancing
+    members: ["hermes1", "hermes2"]
+    target: webcluster
+
+

@@ -1,0 +1,172 @@
+- name: Generate dynamic WebLogic group_vars from inventory
+  hosts: localhost
+  gather_facts: no
+  vars:
+    group_vars_dir: "../inventories/dev/group_vars"
+    JAVA_HOME: "/opt/bea/oracle-jdk1.8.0_331/"
+  pre_tasks:
+    - name: Render weblogic vars from template
+      template:
+        src: weblogic_vars.yml.j2
+        dest: "{{ group_vars_dir }}/weblogic_vars.yml"
+
+
+#  vars:
+#    admin_server_name:  "{{ hostvars[groups['admin'][0]].ansible_server_name }}"
+#    admin_server_listen_address: "{{ hostvars[groups['admin'][0]].ansible_host }}"
+#    admin_server_listen_port: "{{ hostvars[groups['admin'][0]].admin_port | default(7001) }}"
+#    group_vars_dir: "../inventories/dev/group_vars"
+#  pre_tasks:
+#    - name: creating variales
+#      set_fact:
+#        weblogic_clusters: []
+#    - name: Build weblogic clusters dynamically
+#      set_fact:
+#        weblogic_clusters: "{{ weblogic_clusters + [ {'group': item, 'weblogic_cluster_name': hostvars[groups[item][0]].cluster_name | 
+#          default(item)} ] }}"
+#      loop:
+#        - weblogic_managed_web
+#        - weblogic_managed_app
+#      
+#    - name: Build managed servers dynamically
+#      set_fact:
+#        managed_servers: >-
+#          [{ 
+#            'cluster': cluster.weblogic_cluster_name,
+#            'servers': [
+#              {
+#                'name': hostvars[host].ansible_server_name | default(host),
+#                'listen_address': hostvars[host].ansible_host | default(host),
+#                'listen_port': hostvars[host].managed_port | default(7001),
+#                'cluster_name': hostvars[host].cluster_name | default(cluster.weblogic_cluster_name)
+#              }
+#              for host in groups[cluster.group]
+#            ]
+#          } for cluster in weblogic_clusters]
+#
+#    - name: Persist weblogic vars to group_vars/weblogic.yml
+#      copy:
+#        dest: "{{ group_vars_dir }}/weblogic.yml"
+#        content: |
+#          weblogic_config:
+#            admin_server:
+#              admin_server_name: "{{ admin_server_name }}"
+#              admin_server_listen_address: "{{ admin_server_listen_address }}"
+#              admin_server_listen_port: "{{ admin_server_listen_port }}"
+#            clusters: 
+#              {{ weblogic_clusters | to_nice_yaml(indent=4) }}
+#          managed_servers: {{ managed_servers | to_nice_yaml(indent=4) }}
+#      delegate_to: localhost
+#      become: no 
+#  become: yes
+#  #roles:
+  #  - weblogic
+#  tasks:
+#    - name: "Customise config.xml"
+#      template:
+#        src: "templates/config.xml.j2"
+#        dest: "{{ weblogic_domain_home }}/config/config.xml"
+#        owner: "{{ weblogic_user }}"
+#        group: "{{ weblogic_group }}"
+#        mode: "0644"
+#      notify: restart weblogic
+    
+#    - name: "Customise domain env config"
+#      template:
+#        src: "templates/domain_env.j2"
+#        dest: "{{ weblogic_domain_home }}/domain_env"
+#        owner: "{{ weblogic_user }}"
+#        group: "{{ weblogic_group }}"
+#        mode: "0644"
+#  handlers:
+#    - name: restart weblogic
+#      debug:
+#        msg: "Handler restart weblogic triggered!"
+      #shell: "{{ weblogic_domain_home }}/stopWebLogic.sh && {{ weblogic_domain_home }}/startWebLogic.sh"
+      #args:
+      #  chdir: "{{ weblogic_domain_home }}"
+      #become_user: "{{ weblogic_user }}"
+
+#- name: "Start WebLogic Admin Server"
+#  hosts: admin
+#  become: yes
+#  vars_files:
+#    - ../group_vars/dev/weblogic_vars.yml
+#    - ../group_vars/dev/jdbc_vars.yml
+#    - ../group_vars/dev/app_vars.yml
+#  tasks:
+#    - name: debug
+#      debug:
+#        msg: "{{ weblogic_user }}"
+#    - name: Start AdminServer
+#      command: "sh startWebLogic.sh"
+#      args:
+#        chdir: "{{ weblogic_domain_home }}"
+#      async: 600
+#      poll: 0
+#      become: yes
+#      become_user: "{{ weblogic_user }}"
+#      register: script_out
+
+#    - name: debug logs
+#      debug:
+#        msg: "{{script_out}}"
+
+#    - name: Wait until AdminServer is up
+#      wait_for:
+#        host: "{{ admin_server_listen_address }}"
+#        port: "{{ admin_server_listen_port }}"
+#        delay: 30
+#        timeout: 600
+#
+#    - name: Configure jdbc template script
+#      template:
+#        src: jdbc_setup.py.j2
+#        dest: "{{weblogic_domain_home}}/jdbc_setup.py"
+#        owner: "{{ weblogic_user }}"
+#        group: "{{ weblogic_group }}"
+#        mode: "0644"
+#
+#    - name: Configure JDBC via WLST
+#      shell: |
+#        . "{{ wlst_home }}/server/bin/setWLSEnv.sh"
+#        java weblogic.WLST "{{weblogic_domain_home}}/jdbc_setup.py"
+#      environment:
+#        JAVA_HOME: "{{JAVA_HOME}}"
+#        PATH: "{{JAVA_HOME}}/bin:{{ ansible_env.PATH }}"
+
+#    - name: configure app template script
+#      template:
+#        src: app_deploy.py.j2
+#        dest: "{{weblogic_domain_home}}/app_deploy.py"
+#        owner: "{{ weblogic_user }}"
+#        group: "{{ weblogic_group }}"
+#        mode: "0644"
+#
+#    - name: Create directory if not present
+#      file:
+#        path: "{{weblogic_domain_home}}/ba-apps"
+#        state: directory
+#        mode: "0755"
+#        owner: "{{ weblogic_user }}"
+#        group: "{{ weblogic_group }}"
+
+
+#    - name: Copy warfile to path
+#      copy:
+#        src: webapp.war
+#        dest: "{{weblogic_domain_home}}/ba-apps/webapp.war"
+#        mode: '0755'
+##      notify: restart weblogic
+##
+#    - name: Run WLST script for deployments
+#      shell: |
+#        . "{{ wlst_home }}/server/bin/setWLSEnv.sh"
+#        java weblogic.WLST "{{weblogic_domain_home}}/app_deploy.py"
+#      environment:
+#        JAVA_HOME: "{{JAVA_HOME}}"
+#        PATH: "{{JAVA_HOME}}/bin:{{ ansible_env.PATH }}"
+#      register: deploy_out
+#
+#    - debug:
+#        var: deploy_out.stdout_lines

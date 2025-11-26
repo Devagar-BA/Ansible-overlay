@@ -1,0 +1,188 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<domain xmlns="http://xmlns.oracle.com/weblogic/domain" xmlns:sec="http://xmlns.oracle.com/weblogic/security" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:wls="http://xmlns.oracle.com/weblogic/security/wls" xsi:schemaLocation="http://xmlns.oracle.com/weblogic/security/wls http://xmlns.oracle.com/weblogic/security/wls/1.0/wls.xsd http://xmlns.oracle.com/weblogic/domain http://xmlns.oracle.com/weblogic/1.0/domain.xsd http://xmlns.oracle.com/weblogic/security/xacml http://xmlns.oracle.com/weblogic/security/xacml/1.0/xacml.xsd http://xmlns.oracle.com/weblogic/security/providers/passwordvalidator http://xmlns.oracle.com/weblogic/security/providers/passwordvalidator/1.0/passwordvalidator.xsd http://xmlns.oracle.com/weblogic/security http://xmlns.oracle.com/weblogic/1.0/security.xsd">
+  <name>webserver</name>
+  <domain-version>12.2.1.4.0</domain-version>
+  <security-configuration>
+    <name>fg-prl</name>
+    <realm>
+      <sec:authentication-provider xsi:type="wls:default-authenticatorType">
+        <sec:name>DefaultAuthenticator</sec:name>
+      </sec:authentication-provider>
+      <sec:authentication-provider xsi:type="wls:default-identity-asserterType">
+        <sec:name>DefaultIdentityAsserter</sec:name>
+        <sec:active-type>AuthenticatedUser</sec:active-type>
+      </sec:authentication-provider>
+      <sec:role-mapper xmlns:xac="http://xmlns.oracle.com/weblogic/security/xacml" xsi:type="xac:xacml-role-mapperType">
+        <sec:name>XACMLRoleMapper</sec:name>
+      </sec:role-mapper>
+      <sec:authorizer xmlns:xac="http://xmlns.oracle.com/weblogic/security/xacml" xsi:type="xac:xacml-authorizerType">
+        <sec:name>XACMLAuthorizer</sec:name>
+      </sec:authorizer>
+      <sec:adjudicator xsi:type="wls:default-adjudicatorType">
+        <sec:name>DefaultAdjudicator</sec:name>
+      </sec:adjudicator>
+      <sec:credential-mapper xsi:type="wls:default-credential-mapperType">
+        <sec:name>DefaultCredentialMapper</sec:name>
+      </sec:credential-mapper>
+      <sec:cert-path-provider xsi:type="wls:web-logic-cert-path-providerType">
+        <sec:name>WebLogicCertPathProvider</sec:name>
+      </sec:cert-path-provider>
+      <sec:cert-path-builder>WebLogicCertPathProvider</sec:cert-path-builder>
+      <sec:name>myrealm</sec:name>
+      <sec:password-validator xmlns:pas="http://xmlns.oracle.com/weblogic/security/providers/passwordvalidator" xsi:type="pas:system-password-validatorType">
+        <sec:name>SystemPasswordValidator</sec:name>
+        <pas:min-password-length>8</pas:min-password-length>
+        <pas:min-numeric-or-special-characters>1</pas:min-numeric-or-special-characters>
+      </sec:password-validator>
+    </realm>
+    <default-realm>myrealm</default-realm>
+    <credential-encrypted>{AES}Tf+/m5zPVPxhd/W/eUOiZbGKCr7107aBqJMptzaKLqUqVQW9Il/zFygDMDY4aszwzlqJ83QzlT11vdsIfhpIzfFha+JUkpe5050CLHPzWaCVN2XCLVS9MK2RDwWsSCmO</credential-encrypted>
+    <node-manager-username>ebiz_user</node-manager-username>
+    <node-manager-password-encrypted>{AES}E6P/6zEVZyX9PgZFDwO/IwLL/SuUhB76o78AE1Zv7f0=</node-manager-password-encrypted>
+    <enforce-valid-basic-auth-credentials>false</enforce-valid-basic-auth-credentials>
+  </security-configuration>
+  <deployment-configuration></deployment-configuration>
+  <log>
+    <name>webserver</name>
+    <file-name>/webserver/weblogic/logs/wgdomain.log</file-name>
+    <rotation-type>byTime</rotation-type>
+    <number-of-files-limited>true</number-of-files-limited>
+    <file-count>14</file-count>
+    <rotation-time>23:59</rotation-time>
+    <rotate-log-on-startup>false</rotate-log-on-startup>
+  </log>
+  <console-enabled>true</console-enabled>
+  <console-context-path>console</console-context-path>
+  <console-extension-directory>console-ext</console-extension-directory>
+  <!-- Admin Server -->
+  <server>
+    <name>{{ admin_server_name }}</name>
+    <max-message-size>10000000</max-message-size>
+    <max-http-message-size>10000000</max-http-message-size>
+    <complete-message-timeout>60</complete-message-timeout>
+    <complete-http-message-timeout>60</complete-http-message-timeout>
+    <idle-connection-timeout>65</idle-connection-timeout>
+    <log>
+      <name>{{ admin_server_name }}</name>
+      <file-name>/webserver/weblogic/logs/{{ admin_server_name }}.log</file-name>
+      <rotation-type>byTime</rotation-type>
+      <number-of-files-limited>true</number-of-files-limited>
+      <file-count>14</file-count>
+      <rotation-time>23:59</rotation-time>
+      <rotate-log-on-startup>false</rotate-log-on-startup>
+    </log>
+    <listen-port>{{ admin_server_listen_port }}</listen-port>
+    <web-server>
+      <name>{{ admin_server_name }}</name>
+      <web-server-log>
+        <name>{{ admin_server_name }}</name>
+        <file-name>/webserver/weblogic/logs/{{ admin_server_name }}-access.log</file-name>
+        <rotation-type>byTime</rotation-type>
+        <number-of-files-limited>true</number-of-files-limited>
+        <file-count>14</file-count>
+        <rotation-time>23:59</rotation-time>
+        <rotate-log-on-startup>false</rotate-log-on-startup>
+      </web-server-log>
+      <max-post-time-secs>30</max-post-time-secs>
+      <max-post-size>100000000</max-post-size>
+    </web-server>
+    <listen-address>{{ admin_server_listen_address }}</listen-address>
+    <java-compiler>{{java_compiler}}</java-compiler>
+    <tunneling-enabled>true</tunneling-enabled>
+    <tunneling-client-ping-secs>45</tunneling-client-ping-secs>
+    <tunneling-client-timeout-secs>40</tunneling-client-timeout-secs>
+    <graceful-shutdown-timeout>120</graceful-shutdown-timeout>
+    <client-cert-proxy-enabled>true</client-cert-proxy-enabled>
+    <weblogic-plugin-enabled>true</weblogic-plugin-enabled>
+    <server-diagnostic-config>
+      <wldf-diagnostic-volume>Low</wldf-diagnostic-volume>
+    </server-diagnostic-config>
+    <virtual-machine-name>webserver_{{ admin_server_name }}</virtual-machine-name>
+  </server>
+  <!-- Managed Servers -->
+  {% for ms in managed_servers %}
+  <server>
+    <name>{{ ms.name }}</name>
+    <max-http-message-size>-1</max-http-message-size>
+    <ssl>
+      <enabled>false</enabled>
+    </ssl>
+    <machine>{{ ms.name }}</machine>
+    <listen-port>{{ms.listen_port}}</listen-port>
+    <listen-port-enabled>true</listen-port-enabled>
+    <cluster>{{ ms.cluster }}</cluster>
+    <web-server>
+      <web-server-log>
+        <number-of-files-limited>false</number-of-files-limited>
+      </web-server-log>
+      <frontend-http-port>0</frontend-http-port>
+      <frontend-https-port>0</frontend-https-port>
+      <keep-alive-enabled>true</keep-alive-enabled>
+      <keep-alive-secs>30</keep-alive-secs>
+      <https-keep-alive-secs>60</https-keep-alive-secs>
+      <post-timeout-secs>30</post-timeout-secs>
+      <max-post-size>-1</max-post-size>
+      <send-server-header-enabled>false</send-server-header-enabled>
+      <wap-enabled>false</wap-enabled>
+      <accept-context-path-in-get-real-path>false</accept-context-path-in-get-real-path>
+    </web-server>
+    <listen-address>{{ ms.listen_address }}</listen-address>
+    <administration-port>{{ ms.listen_port }}</administration-port>
+    <java-compiler>javac</java-compiler>
+    <tunneling-enabled>false</tunneling-enabled>
+    <tunneling-client-ping-secs>45</tunneling-client-ping-secs>
+    <tunneling-client-timeout-secs>40</tunneling-client-timeout-secs>
+    <jta-migratable-target>
+      <user-preferred-server>{{ ms.name }}</user-preferred-server>
+      <cluster>{{ ms.cluster }}</cluster>
+    </jta-migratable-target>
+    <classpath-servlet-disabled>false</classpath-servlet-disabled>
+    <startup-mode>RUNNING</startup-mode>
+    <client-cert-proxy-enabled>false</client-cert-proxy-enabled>
+    <weblogic-plugin-enabled>true</weblogic-plugin-enabled>
+    <server-diagnostic-config>
+      <wldf-diagnostic-volume>Low</wldf-diagnostic-volume>
+    </server-diagnostic-config>
+    <virtual-machine-name>webserver_{{ ms.name }}</virtual-machine-name>
+    <data-source>
+      <rmi-jdbc-security>Compatibility</rmi-jdbc-security>
+    </data-source>
+  </server>
+  {% endfor %}
+  
+  <!-- Cluster -->
+  {% for ms in managed_servers %}
+    <cluster>
+    <name>{{ms.cluster}}</name>
+    <cluster-messaging-mode>unicast</cluster-messaging-mode>
+    <number-of-servers-in-cluster-address>100</number-of-servers-in-cluster-address>
+    <dynamic-servers>
+      <maximum-dynamic-server-count>0</maximum-dynamic-server-count>
+    </dynamic-servers>
+  </cluster>
+  {% endfor %}
+  <embedded-ldap>
+    <name>webserver</name>
+    <credential-encrypted>{AES}dTJL3NGFEYVagjSE9ObcOKo+AN6feLrGVGfa0OECvc0367OI6Ux+u1qXfq5z/txy</credential-encrypted>
+  </embedded-ldap>
+  <administration-port-enabled>false</administration-port-enabled>
+  <exalogic-optimizations-enabled>false</exalogic-optimizations-enabled>
+  <archive-configuration-count>5</archive-configuration-count>
+  <config-backup-enabled>false</config-backup-enabled>
+  <configuration-version>12.1.2.0.0</configuration-version>
+  <configuration-audit-type>log</configuration-audit-type>
+  <cluster-constraints-enabled>false</cluster-constraints-enabled>
+
+  <!-- Machine -->
+  {% for ms in managed_servers %}
+  <machine xsi:type="unix-machineType">
+    <name>{{ ms.name }}</name>
+  </machine>
+  {% endfor %}
+    <machine xsi:type="unix-machineType">
+    <name>{{ admin_server_name }}</name>
+  </machine>
+    <admin-server-name>{{ admin_server_name }}</admin-server-name>
+  <administration-protocol>t3s</administration-protocol>
+</domain>
+

@@ -1,0 +1,71 @@
+connect('{{ weblogic_admin_user }}','{{ weblogic_admin_pass }}','t3://{{ admin_server_listen_address }}:{{ admin_server_listen_port }}')
+
+edit()
+startEdit()
+
+{# === Create normal DataSources if jdbc_configs is defined === #}
+{% if jdbc_configs is defined and jdbc_configs|length > 0 %}
+{% for ds in jdbc_configs %}
+print('Checking datasource {{ ds.name }}...')
+
+if cmo.lookupJDBCSystemResource('{{ ds.name }}') is None:
+    print('Creating datasource {{ ds.name }}...')
+    cd('/')
+    jdbc = create('{{ ds.name }}', "JDBCSystemResource")
+    jdbcResource = jdbc.getJDBCResource()
+    jdbcResource.setName('{{ ds.name }}')
+
+    driverParams = jdbcResource.getJDBCDriverParams()
+    driverParams.setUrl('{{ ds.url }}')
+    driverParams.setDriverName("oracle.jdbc.OracleDriver")
+    driverParams.setPassword('{{ ds.password }}')
+
+    props = driverParams.getProperties()
+    userProp = props.lookupProperty("user")
+    if userProp is None:
+        userProp = props.createProperty("user")
+    userProp.setValue('{{ ds.user }}')
+
+    dsParams = jdbcResource.getJDBCDataSourceParams()
+    dsParams.setJNDINames(jarray.array(["{{ ds.jndi }}"], String))
+    
+
+    connPoolParams = jdbcResource.getJDBCConnectionPoolParams()
+
+    cd('/JDBCSystemResources/{{ ds.name }}')
+    set('Targets', jarray.array([ObjectName('com.bea:Name={{ ds.target }},Type=Cluster')], ObjectName))
+else:
+    print('Datasource {{ ds.name }} already exists, skipping.')
+{% endfor %}
+{% endif %}
+
+
+{# === Create Multi DataSources if weblogic_multidatasources is defined === #}
+{% if weblogic_multidatasources is defined and weblogic_multidatasources|length > 0 %}
+{% for mds in weblogic_multidatasources %}
+print('Checking multi data source {{ mds.name }}...')
+
+if cmo.lookupJDBCSystemResource('{{ mds.name }}') is None:
+    print('Creating multi data source {{ mds.name }}...')
+    cd('/')
+    mdsBean = create('{{ mds.name }}', "JDBCSystemResource")
+    mdsResource = mdsBean.getJDBCResource()
+    mdsResource.setName('{{ mds.name }}')
+
+    # MultiDS JNDI
+    mdsParams = mdsResource.getJDBCDataSourceParams()
+    mdsParams.setAlgorithmType("{{ mds.algorithm }}")
+    mdsParams.setDataSourceList('{{ mds.members | join(",") }}')
+    mdsParams.setJNDINames(jarray.array(["{{ mds.jndi }}"], String))
+
+    cd('/JDBCSystemResources/{{ mds.name }}')
+    set('Targets', jarray.array([ObjectName('com.bea:Name={{ mds.target }},Type=Cluster')], ObjectName))
+else:
+    print('Multi Data Source {{ mds.name }} already exists, skipping.')
+{% endfor %}
+{% endif %}
+
+save()
+activate()
+disconnect()
+

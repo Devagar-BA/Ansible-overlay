@@ -1,0 +1,12 @@
+tomcat_config:
+  active:
+    path: "/websever/apache-1a"
+    port: 8000
+    name: "1a"
+  passive:
+    path: "/websever/apache-1b"
+    port: 9000
+    name: "1b"
+  default:
+    path: "/websever/apache"
+    port: 8085

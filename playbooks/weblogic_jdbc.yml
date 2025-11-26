@@ -1,0 +1,62 @@
+- name: "Configuration setup in Weblogic"
+  hosts: admin
+  become: yes
+  vars_files:
+    - ../inventories/{{env}}/group_vars/weblogic_vars.yml
+    - ../inventories/{{env}}/group_vars/jdbc_vars.yml
+  vars:
+    admin_host: "{{ groups['admin'][0] }}"
+  tasks:
+    - name: debug
+      debug:
+        msg: "{{ weblogic_user }}"
+    - name: debug
+      debug:
+        msg: "Need to Add step to stop Weblogic"
+    - name: Set admin server listen variables
+      set_fact:
+        admin_server_listen_address: "{{ hostvars[admin_host].ansible_host }}"
+        admin_server_listen_port: "{{ hostvars[admin_host].admin_port }}"
+        admin_server_name: "{{ hostvars[admin_host].ansible_server_name }}"
+
+    - name: Check if WebLogic Admin Server is running
+      shell: |
+        ps -ef | grep '[j]ava' | grep 'weblogic.Server'
+      register: admin_status
+      ignore_errors: true
+
+    - name: Start AdminServer
+      command: "sh startWebLogic.sh"
+      args:
+        chdir: "{{ weblogic_domain_home }}"
+      when: admin_status.rc != 0
+      become_user: "{{ weblogic_user }}"
+      register: script_out
+      
+
+    - name: debug logs
+      debug:
+        msg: "{{script_out}}"
+
+    - name: Wait until AdminServer is up
+      wait_for:
+        host: "{{ admin_server_listen_address }}"
+        port: "{{ admin_server_listen_port }}"
+        delay: 30
+        timeout: 600
+
+    - name: Configure jdbc template script
+      template:
+        src: jdbc_setup.py.j2
+        dest: "{{weblogic_domain_home}}/jdbc_setup.py"
+        owner: "{{ weblogic_user }}"
+        group: "{{ weblogic_group }}"
+        mode: "0644"
+
+    - name: Configure JDBC via WLST
+      shell: |
+        . "{{ wlst_home }}/server/bin/setWLSEnv.sh"
+        java weblogic.WLST "{{weblogic_domain_home}}/jdbc_setup.py"
+      environment:
+        JAVA_HOME: "{{JAVA_HOME}}"
+        PATH: "{{JAVA_HOME}}/bin:{{ ansible_env.PATH }}"

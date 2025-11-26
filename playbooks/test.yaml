@@ -1,0 +1,86 @@
+- name: Generate admin and managed server variables
+  hosts: weblogic
+  gather_facts: false
+  become: true
+  vars_files:
+    - ../inventories/{{env}}/group_vars/mount_vars.yml
+    - ../inventories/{{env}}/group_vars/weblogic_vars.yml
+  vars:
+    admin_host: "{{ groups['admin'][0] }}"
+  roles:
+    - weblogic
+  tasks:
+    - name: Set admin server listen variables
+      set_fact:
+        admin_server_listen_address: "{{ hostvars[admin_host].ansible_host }}"
+        admin_server_listen_port: "{{ hostvars[admin_host].admin_port }}"
+        admin_server_name: "{{ hostvars[admin_host].ansible_server_name }}"
+
+    - name: Get unique cluster names from managed servers
+      set_fact:
+        cluster_names: "{{ groups['weblogic_managed'] | map('extract', hostvars, 'cluster_name') | unique }}"
+    - name: Debug servers
+      debug:
+        msg: "clustername :{{cluster_names}}"
+
+    - name: Initialize managed_servers list
+      set_fact:
+        managed_servers: []
+    - name: Append managed servers info per cluster
+      set_fact:
+        managed_servers: "{{ managed_servers + [server_info] }}"
+      vars:
+        server_info:
+          name: "{{ hostvars[item]['ansible_server_name'] }}"
+          listen_address: "{{ hostvars[item]['ansible_host'] }}"
+          listen_port: "{{ hostvars[item]['managed_port'] }}"
+          cluster: "{{ hostvars[item]['cluster_name'] }}"
+      loop: "{{ groups['weblogic_managed'] }}"
+      when: hostvars[item]['cluster_name'] in cluster_names
+
+#    - name: Append managed servers info per cluster
+#      set_fact:
+#        managed_servers: >-
+#          {{
+#            managed_servers +
+#            (
+#              groups['weblogic_managed']
+#              | map('extract', hostvars)
+#              | selectattr('cluster_name', 'equalto', item)
+#              | map('combine', {
+#                  'name': attribute('ansible_server_name'),
+#                  'listen_address': attribute('ansible_host'),
+#                  'listen_port': attribute('managed_port'),
+#                  'cluster': attribute('cluster_name')
+#                })
+#              | list
+#            )
+#          }}
+#      loop: "{{ cluster_names }}"
+#      loop_control:
+#        loop_var: item
+
+    - name: Display admin and managed servers variables
+      debug:
+        msg:
+          admin_server_listen_address: "{{ admin_server_listen_address }}"
+          admin_server_listen_port: "{{ admin_server_listen_port }}"
+          admin_server_name: "{{ admin_server_name }}"
+          managed_servers: "{{ managed_servers }}"
+
+    - name: "Customise config.xml"
+      template:
+        src: "templates/config.xml.j2"
+        dest: "{{ weblogic_domain_home }}/config/config.xml"
+        owner: "{{ weblogic_user }}"
+        group: "{{ weblogic_group }}"
+        mode: "0644"
+#      notify: restart weblogic
+    - name: "Customise domain env config"
+      template:
+        src: "templates/domain_env.j2"
+        dest: "{{ weblogic_domain_home }}/domain_env"
+        owner: "{{ weblogic_user }}"
+        group: "{{ weblogic_group }}"
+        mode: "0644"
+

@@ -1,0 +1,67 @@
+- name: "Setup Apache and start"
+  hosts: webserver
+  become: yes
+  vars_files:
+    - ../inventories/{{env}}/group_vars/apache_vars.yml
+  tasks:
+    - name: Set target cluster based on Apache group membership
+      set_fact:
+        target_cluster: >-
+          {{ 'webcluster' if 'webserver_web' in group_names else
+             'appcluster' if 'webserver_app' in group_names else
+             'unknown'}}
+
+    - name: Testing
+      debug:
+        msg: "cluster name {{ groups['weblogic_managed'] | map('extract', hostvars, 'cluster_name') | unique | list }}"
+    - name: target cluster testing
+      debug:
+        msg: "Target Cluster {{target_cluster}}"
+    - name: Filter server testing
+      debug:
+        msg: "Target Cluster {{ hostvars[item] ['ansible_host'] }}"
+      loop: "{{ groups['weblogic_managed'] }}"
+      when: hostvars[item]['cluster_name'] in target_cluster
+    - name: Initialize cluster_servers list
+      set_fact:
+        cluster_servers: []
+    - name: Append managed servers info per cluster
+      set_fact:
+        cluster_servers: "{{ cluster_servers + [server_info] }}"
+      vars:
+        server_info:
+          name: "{{ hostvars[item]['ansible_server_name'] }}"
+          listen_address: "{{ hostvars[item]['ansible_host'] }}"
+          listen_port: "{{ hostvars[item]['admin_port'] }}"
+          cluster: "{{ hostvars[item]['cluster_name'] }}"
+      loop: "{{ groups['weblogic_managed'] }}"
+      when: hostvars[item]['cluster_name'] in target_cluster
+    - name: Show info about filtered servers
+      debug:
+        msg: "Found {{ cluster_servers | length }} managed servers for cluster {{ target_cluster }} on {{ inventory_hostname }}"
+
+    - name: Warn if no managed servers found for the cluster
+      debug:
+        msg: "WARNING: No managed servers found for cluster {{ target_cluster }} on host {{ inventory_hostname }}"
+      when: cluster_servers  | length == 0
+    - name: Display admin and managed servers variables
+      debug:
+        msg:
+          filtered_servers: "{{ cluster_servers }}"
+    - name: Create weblogic.conf with actual servers or with comment if none
+      template:
+        src: wls_plugin.conf.j2
+        dest: "{{apache_path}}/conf/app.d/wls_plugin.conf"
+        owner: wgadmin
+        group: wgadmin
+        mode: '0644'
+      notify: Restart Apache 
+      vars:
+        cluster_servers: "{{ cluster_servers }}"
+        target_cluster_name: "{{ target_cluster }}"
+  handlers:
+    - name: Restart Apache
+      service:
+        name: webserver-apache
+        state: restarted
+        enabled: true

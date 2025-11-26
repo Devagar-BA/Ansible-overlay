@@ -1,0 +1,45 @@
+- name: "Setup Apache and start"
+  hosts: webserver
+  become: yes
+  vars_files:
+    - ../inventories/{{env}}/group_vars/apache_vars.yml
+  tasks:
+    - name: Check if log path exists
+      stat:
+        path: "{{apache_path}}/logs"
+      register: logs_stat
+
+    - name: Remove logs if it's a directory (not a symlink)
+      file:
+        path: "{{apache_path}}/logs"
+        state: absent
+      when: logs_stat.stat.exists and not logs_stat.stat.islnk
+
+    - name: "Create symlink {{apache_path}}/logs → /webserver/logs"
+      file:
+        src: /webserver/logs
+        dest: "{{apache_path}}/logs"
+        state: link
+      when: not logs_stat.stat.exists or not logs_stat.stat.islnk
+
+#    - name: Create simlink for logs directory
+#      file:
+#        src: "/webserver/logs"
+#        dest: "{{apache_path}}/logs"
+#        state: link
+        
+    - name: Create httpd.conf with customisation 
+      template:
+        src: httpd.conf.j2
+        dest: "{{apache_path}}/conf/app.d/httpd.conf"
+        owner: wgadmin
+        group: wgadmin
+        mode: '0644'
+      notify: Restart Apache
+
+  handlers:
+    - name: Restart Apache
+      service:
+        name: webserver-apache
+        state: restarted
+        enabled: true

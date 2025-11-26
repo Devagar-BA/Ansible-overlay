@@ -1,0 +1,31 @@
+#
+# This file can be modified by users - it contains all info relating
+# to the weblogic plugin and is normally 'include'd in httpd.conf
+#
+# It can be disabled by:   service <instance-name> set wls_plugin off
+#
+# see http://download.oracle.com/docs/cd/E12840_01/wls/docs103/plugins/apache.html
+#
+ LoadModule weblogic_module /opt/wls_plugin/x86_64/mod_wl_24.so
+#
+# Add details of your weblogic cluster here:
+# eg: WebLogicCluster zauat-01.baplc.com:5055,zauat-02.baplc.com:5055
+#
+#
+ {% if cluster_servers | length > 0 %}
+WebLogicCluster {% for server in cluster_servers %}{{ server.listen_address }}:{{ server.listen_port }}{% if not loop.last %},{% endif %}{% endfor %}
+{% else %}
+# No managed servers found for cluster {{ target_cluster_name }}. No proxy rules configured.
+{% endif %}
+
+ ConnectTimeoutSecs 20
+ ConnectRetrySecs 4
+ WLTempDir /webserver/apache/logs
+ ErrorPage /temp_outage.html
+ WLExcludePathOrMimeType /temp_outage.html,/outage_page.html,/cgi-bin/,/admin-cgi/,/ebiz-test-pages
+#
+# Add expressions here to select URIs to forward to weblogic
+# eg: MatchExpression /esignature*
+#
+MatchExpression *
+#

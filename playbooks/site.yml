@@ -1,0 +1,8 @@
+#- import_playbook: weblogic_install.yml
+- import_playbook: weblogic_config.yml
+- import_playbook: weblogic_jdbc.yml
+- import_playbook: weblogic_deploy.yml
+- import_playbook: weblogic_ms_start.yml
+- import_playbook: apache_setup.yml
+- import_playbook: apache_weblogic.yml
+

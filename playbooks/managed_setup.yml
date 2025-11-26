@@ -1,0 +1,24 @@
+- name: "Setup and start WebLogic Managed Servers"
+  hosts: weblogic_managed
+  become: yes
+  vars_files:
+    - ../inventories/{{env}}/group_vars/weblogic_vars.yml
+  tasks:
+    - name: Copy WebLogic installer tar to target server
+      copy:
+        src: "files/{{item}}"
+        dest: "{{log4j_path}}"
+        mode: "0755"
+        owner: "{{ weblogic_user }}"
+        group: "{{ weblogic_group }}"
+      loop: "{{ log4jfiles }}"
+    - name: Start Weblogic Managed instances
+      command: "sh startWebLogic.sh"
+      args:
+        chdir: "{{ weblogic_domain_home }}"
+      become_user: "{{ weblogic_user }}"
+      register: script_out
+
+    - name: debug logs
+      debug:
+        msg: "{{script_out}}"

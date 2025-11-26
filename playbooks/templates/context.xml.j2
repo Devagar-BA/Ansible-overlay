@@ -1,0 +1,24 @@
+<Context path="/" docBase="{{tomcat_path}}/appl" >
+
+{% if jdbc_configs is defined and jdbc_configs|length > 0 %}
+{% for ds in jdbc_configs %}
+<Resource type="{{ds.type | default('oracle.ucp.jdbc.PoolDataSource') }}"
+          name="jdbc/{{ds.name}}"
+          auth="Container"
+          factory="{{ds.factory | default('oracle.ucp.jdbc.PoolDataSourceImpl') }}"
+          connectionFactoryClassName="{{ds.factoryclass | default('oracle.jdbc.pool.OracleDataSource') }}"
+          url="{{ds.url}}"
+          maxTotal="10"
+          validationQuery="SELECT 1 FROM DUAL"
+          testOnBorrow="true"
+          initialSize="0"
+          maxConnectionReuseTime="900"
+          connectionWaitTimeout="5"
+          inactiveConnectionTimeout="300"
+          user="{{ds.user}}"
+          password="{{ds.password}}"/>
+
+{% endfor %}
+{% endif %}
+
+</Context>

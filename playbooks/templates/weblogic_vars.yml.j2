@@ -1,0 +1,36 @@
+weblogic_domain_home: /webserver/weblogic
+weblogic_user: wgadmin
+weblogic_group: wgadmin
+wlst_home: /opt/bea/server12214_220329/wlserver/
+{% set admin_host = groups['admin'][0] %}
+admin_server_listen_address: "{{ hostvars[admin_host].ansible_host }}"
+admin_server_listen_port: "{{ hostvars[admin_host].admin_port }}"
+admin_server_name: "{{ hostvars[admin_host].ansible_server_name }}"
+
+weblogic_admin_user: wgadmin
+weblogic_admin_pass: wgS3rv3r
+jdk_tar: jdk.tar.gz
+weblogic_tar: WebLogic_12.tar
+weblogic_version_dir: WebLogic_12.2.1.4
+rpm_name: WLSv12214_64_220329-1-1.x86_64.rpm
+domain_create_tar: create_wls_env_v12.2.tar
+version_regex: server12214_220118
+server_regex: utstest
+
+JAVA_HOME: "/opt/bea/oracle-jdk1.8.0_331/"
+PATH: {{JAVA_HOME}}/bin
+java_compiler: {{JAVA_HOME}}/bin/javac
+log4j_path: /webserver/weblogic/override
+log4jfiles:
+  - log4j.properties
+  - log4.xml
+managed_servers:
+{% set cluster_names = groups['weblogic_managed'] | map('extract', hostvars, 'cluster_name') | unique %}
+{% for cluster_name in cluster_names %}
+{% for server in groups['weblogic_managed'] if hostvars[server].cluster_name == cluster_name %}
+  - name: "{{ hostvars[server].ansible_server_name }}"
+    listen_address: "{{ hostvars[server].ansible_host }}"
+    listen_port: "{{ hostvars[server].managed_port }}"
+    cluster: "{{ hostvars[server].cluster_name }}"
+{% endfor %}
+{% endfor %} 

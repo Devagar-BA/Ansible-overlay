@@ -1,0 +1,29 @@
+- name: Setup Weblogic Domains
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - group_vars/{{env}}/weblogic_vars.yml
+  tasks:
+    - name: Initialize managed_servers list as empty
+      set_fact:
+        managed_servers_list: []
+
+    - name: Build managed_servers list dynamically
+      set_fact:
+        managed_servers_list: "{{ managed_servers_list + [ {
+          'name': hostvars[item_managed].get('managed_name', item_managed),
+          'listen_address': hostvars[item_managed]['ansible_host'],
+          'listen_port': current_domain.base_managed_port,
+          'cluster': hostvars[item_managed].get('cluster_name', current_domain.cluster)
+        } ] }}"
+      loop: "{{ groups[current_domain.managed_group] }}"
+      loop_control:
+        loop_var: item_managed
+
+    - name: Append processed domain info to weblogic_domains list
+      set_fact:
+        weblogic_domains: "{{ weblogic_domains + [ current_domain | combine({
+          'admin_listen_address': hostvars[groups[current_domain.admin_managed_group][0]]['ansible_host'],
+          'managed_servers': managed_servers_list
+        }) ] }}"
+

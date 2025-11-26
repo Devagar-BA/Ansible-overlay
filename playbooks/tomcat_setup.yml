@@ -1,0 +1,60 @@
+- name: "Setup Apache and start"
+  hosts: tomcat
+  become: yes
+  vars_files:
+    - ../inventories/{{env}}/group_vars/tomcat_vars.yml
+    - ../inventories/{{env}}/group_vars/jdbc_vars.yml
+    - ../inventories/{{env}}/group_vars/app_vars.yml
+  tasks:
+
+    - name: Stop the tomcat before cloning
+      command: "service webserver-tomcat stop"
+    - name: testing
+      debug:
+        msg: "test {{app_side}}"
+    - name: Set Tomcat variables based on side from var file
+      set_fact:
+        tomcat_name: "{{ tomcat_config[app_side | default('default')].name }}"
+        tomcat_port: "{{ tomcat_config[app_side | default('default')].port }}"
+        tomcat_path: "{{ tomcat_config[app_side | default('default')].path }}"
+
+    - name: Print Tomcat info
+      debug:
+        msg: "Name={{ tomcat_name }}, Port={{ tomcat_port }}, Path={{ tomcat_path }}"
+
+    - name: Check if instance path exists
+      stat:
+        path: "{{ tomcat_path }}"
+      register: tomcat_path_stat
+    - name: Run clone command with parameters
+      command: "service webserver-tomcat clone {{ tomcat_name }} {{ tomcat_port }}"
+      become: yes
+      become_user: root 
+      register: script_ouput
+      when: 
+        - app_side in ['a', 'b'] 
+        - not tomcat_path_stat.stat.exists
+
+    - name: Debug logs for domain creation
+      debug:
+        msg: "{{script_ouput}}"
+    - name: JDBC config setup
+      template:
+        src: context.xml.j2
+        dest: "{{tomcat_path}}/conf/context.xml"
+        owner: "{{ tomcat_user }}"
+        group: "{{ tomcat_group }}"
+        mode: "0755"
+    - name: Copy warfile to path
+      copy:
+        src: "/tmp/{{item.ear}}"
+        dest: "{{tomcat_path}}/appl/{{item.ear}}"
+        mode: '0755'
+      loop: "{{ deployments }}"
+    - name: Restart  tomcat
+      command: "service webserver-tomcat{{ tomcat_name }} restart"
+      become: yes
+      register: script_ouput
+    - name: Debug logs for domain creation
+      debug:
+        msg: "{{script_ouput}}"

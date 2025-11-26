@@ -1,0 +1,3 @@
+deployments:
+  - name: components
+    ear: components.war

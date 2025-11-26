@@ -1,0 +1,11 @@
+- name: Common Environment Setup
+  hosts: localhost
+  vars:
+    group_vars_dir: "../inventories/{{env}}/group_vars"
+    JAVA_HOME: "/opt/bea/oracle-jdk1.8.0_331/"
+  tasks:
+    - name: Render weblogic vars from template
+      template:
+        src: weblogic_vars.yml.j2
+        dest: "{{ group_vars_dir }}/weblogic_vars.yml"
+

@@ -1,0 +1,6 @@
+deployments:
+  - name: watchlist
+    ear: watchlist.ear
+    source: /webserver/weblogic/ba-apps/watchlist.ear
+    target: webcluster
+    stage_mode: stage

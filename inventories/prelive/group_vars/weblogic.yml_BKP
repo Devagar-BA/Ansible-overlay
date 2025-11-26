@@ -1,0 +1,15 @@
+weblogic_config:
+  admin_server:
+    admin_server_name: "AdminServer"
+    admin_server_listen_address: "10.141.74.169"
+    admin_server_listen_port: "7001"
+  clusters: -   group: weblogic_managed_web
+    weblogic_cluster_name: AppCluster
+-   group: weblogic_managed_app
+    weblogic_cluster_name: AppCluster
+
+managed_servers: "[{ \n  'cluster': cluster.weblogic_cluster_name,\n  'servers': [\n    {\n      'name':
+    hostvars[host].ansible_server_name | default(host),\n      'listen_address': hostvars[host].ansible_host
+    | default(host),\n      'listen_port': hostvars[host].managed_port | default(7001),\n
+    \     'cluster_name': hostvars[host].cluster_name | default(cluster.weblogic_cluster_name)\n
+    \   }\n    for host in groups[cluster.group]\n  ]\n} for cluster in weblogic_clusters]"

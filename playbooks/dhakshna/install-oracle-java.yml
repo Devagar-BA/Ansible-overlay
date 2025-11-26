@@ -1,0 +1,66 @@
+---
+- name: Manage Oracle Java installation and configuration
+  hosts: weblogic,admin
+  become: yes
+
+  roles:
+    - role: oracle-java
+      tags:
+        - install
+        - upgrade 
+
+  tasks:
+    # === Upgrade tasks (run only with --tags upgrade) ===
+    - block:
+        - name: Update the JAVA_HOME in domain_env
+          ansible.builtin.lineinfile:
+            path: /webserver/weblogic/domain_env
+            regexp: '^export JAVA_HOME=/opt/bea/.*'
+            line: "export JAVA_HOME=/opt/bea/{{ jdk_dir }}"
+            backup: yes
+
+        - name: Update java compiler path in config.xml
+          ansible.builtin.lineinfile:
+            path: /webserver/weblogic/config/config.xml
+            regexp: '^(\s*)<java-compiler>/opt/bea/oracle.*</java-compiler>'
+            line: '\1<java-compiler>/opt/bea/{{ jdk_dir }}/bin/javac</java-compiler>'
+            backrefs: yes
+            backup: yes
+
+      rescue:
+        - name: Automatic rollback domain_env from backup
+          ansible.builtin.shell: |
+            latest_backup=$(ls -t /webserver/weblogic/domain_env.*~ | head -1)
+            [ -n "$latest_backup" ] && cp -f "$latest_backup" /webserver/weblogic/domain_env
+          args:
+            executable: /bin/bash
+
+        - name: Automatic rollback config.xml from backup
+          ansible.builtin.shell: |
+            latest_backup=$(ls -t /webserver/weblogic/config/config.xml.*~ | head -1)
+            [ -n "$latest_backup" ] && cp -f "$latest_backup" /webserver/weblogic/config/config.xml
+          args:
+            executable: /bin/bash
+      tags:
+        - upgrade
+
+    # === Manual rollback tasks (run only with --tags rollback) ===
+    - name: Manual rollback domain_env from backup
+      ansible.builtin.shell: |
+        latest_backup=$(ls -t /webserver/weblogic/domain_env.*~ | head -1)
+        [ -n "$latest_backup" ] && cp -f "$latest_backup" /webserver/weblogic/domain_env
+      args:
+        executable: /bin/bash
+      check_mode: no
+      tags:
+        - rollback
+
+    - name: Manual rollback config.xml from backup
+      ansible.builtin.shell: |
+        latest_backup=$(ls -t /webserver/weblogic/config/config.xml.*~ | head -1)
+        [ -n "$latest_backup" ] && cp -f "$latest_backup" /webserver/weblogic/config/config.xml
+      args:
+        executable: /bin/bash
+      check_mode: no
+      tags:
+        - rollback
