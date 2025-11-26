@@ -15,11 +15,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-inventory
-          path: Ansible-overlay
-  execute-underlay:
-    uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
-    with:
-      playbook: playbooks/apptest.yml
-      inventory: inventory/dev/hosts
-      extra_vars: wl_version=14c
+          path: .
+  #execute-underlay:
+  #  uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
+  #  with:
+   #   playbook: playbooks/apptest.yml
+    #  inventory: inventory/dev/hosts
+     # extra_vars: wl_version=14c
 
