@@ -1,0 +1,3 @@
+- import_playbook: playbooks/weblogic_install.yml
+  vars:
+    wl_version: "14c"
