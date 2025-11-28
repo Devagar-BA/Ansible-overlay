@@ -24,5 +24,4 @@ jobs:
     with:
       playbook: playbooks/apptest.yml
       inventory: inventory/dev/hosts
-      extra_vars: wl_version=14c
-
+      
