@@ -1,1 +1,3 @@
 - import_playbook: weblogic_install.yml
+  vars:
+     wl_version: 12c
