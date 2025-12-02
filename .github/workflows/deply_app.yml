@@ -10,13 +10,13 @@ jobs:
       - name: Checkout overlay
         uses: actions/checkout@v4
 
-      - name: Upload overlay artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: overlay-artifacts
-          path: |
-            inventory
-            playbooks/apptest.yml
+#      - name: Upload overlay artifacts
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: overlay-artifacts
+ #         path: |
+#            inventory
+#            playbooks/apptest.yml
 
   execute-underlay:
     needs: package-overlay
