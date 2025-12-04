@@ -2,6 +2,15 @@ name: Deploy App A
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Which steps to run (full, java, weblogic, config, deploy, apache)
+        required: true
+        default: full
+      wl_version:
+        description: weblogic version
+        required: false
+        default: "14c"
 
 jobs:
   package-overlay:
