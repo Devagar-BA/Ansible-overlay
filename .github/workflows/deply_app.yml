@@ -6,9 +6,43 @@ on:
 jobs:
   package-overlay:
     runs-on: ubuntu-latest
+    outputs:
+      artifact_name: ${{ steps.upload.outputs.artifact_name }}
     steps:
       - name: Checkout overlay
         uses: actions/checkout@v4
+
+      - name: Upload overlay artifacts
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: overlay-artifacts
+          path: |
+            playbooks
+            inventories
+      - name: set-artifact-name
+        run: echo "::set-output name=artifact_name::overlay-artifacts"
+
+  java-install:
+    needs: package-overlay
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.mode == 'full' || github.event.inputs.mode == 'java' }}
+    steps:
+      - name: Download overlay artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: overlay-artifacts
+          path: overlay
+      - name: Checkout underlay
+        uses: actions/checkout@v4
+        with:
+          repository: Devagar-BA/Ansible-underlay
+          path: underlay
+      - name: Run Java install
+        run: |
+          cd underlay
+          ansible-playbook overlay/playbooks/java_install.yml -i ../overlay/inventory/dev/hosts
+    
 
 #      - name: Upload overlay artifacts
 #        uses: actions/upload-artifact@v4
@@ -18,12 +52,12 @@ jobs:
 #            inventory
 #            playbooks/apptest.yml
 
-  execute-underlay:
-    needs: package-overlay
-    uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
-    with:
-      playbook: playbooks/apptest.yml
-      inventory: inventory/dev/hosts
-      extra_vars: wl_version=14c
+#  execute-underlay:
+ #   needs: package-overlay
+ #   uses: Devagar-BA/Ansible-underlay/.github/workflows/run-underlay.yml@main
+ #   with:
+  #    playbook: playbooks/apptest.yml
+  #    inventory: inventory/dev/hosts
+  #    extra_vars: wl_version=14c
       
       
