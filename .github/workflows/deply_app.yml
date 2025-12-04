@@ -56,7 +56,7 @@ jobs:
       - name: Run Java install
         run: |
           cd underlay
-          ansible-playbook ../overlay/playbooks/apptest.yml -i ../overlay/inventory/dev/hosts
+          ansible-playbook playbooks/weblogic_install.yml -i ../overlay/inventory/dev/hosts
     
 
 #      - name: Upload overlay artifacts
