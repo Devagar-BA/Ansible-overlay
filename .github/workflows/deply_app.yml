@@ -47,6 +47,12 @@ jobs:
         with:
           repository: Devagar-BA/Ansible-underlay
           path: underlay
+      - name: Debug repo info
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          echo "Branch/Ref: $GITHUB_REF"
+          ls -l "$GITHUB_WORKSPACE"
       - name: Run Java install
         run: |
           cd underlay
