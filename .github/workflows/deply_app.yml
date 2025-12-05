@@ -57,6 +57,33 @@ jobs:
         run: |
           cd underlay
           ansible-playbook playbooks/weblogic_install.yml -i ../overlay/inventory/dev/hosts -e "wl_version=14c"
+
+  weblogic-install:
+    needs: java-install
+    runs-on: [self-hosted, ephemeral]
+    if: ${{ github.event.inputs.mode == 'full' || github.event.inputs.mode == 'weblogic' }}
+    steps:
+      - name: Download overlay artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: overlay-artifacts
+          path: overlay
+      - name: Checkout underlay
+        uses: actions/checkout@v4
+        with:
+          repository: Devagar-BA/Ansible-underlay
+          path: underlay
+      - name: Debug repo info
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          echo "Branch/Ref: $GITHUB_REF"
+          ls -l "$GITHUB_WORKSPACE"
+      - name: Run Java install
+        run: |
+          cd underlay
+          ansible-playbook playbooks/weblogic_install.yml -i ../overlay/inventory/dev/hosts -e "wl_version=14c"
+
     
 
 #      - name: Upload overlay artifacts
