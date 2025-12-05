@@ -60,7 +60,7 @@ jobs:
 
   weblogic-install:
     needs: java-install
-    runs-on: [self-hosted, ephemeral]
+    runs-on: ubuntu-latest
     if: ${{ github.event.inputs.mode == 'full' || github.event.inputs.mode == 'weblogic' }}
     steps:
       - name: Download overlay artifacts
